@@ -36,11 +36,40 @@ php artisan serve
 Aplikasi dapat diakses pada `http://127.0.0.1:8000`, dan fitur peminjaman buku
 pada `http://127.0.0.1:8000/peminjaman`.
 
+## Endpoint API
+
+| Metode | Alamat            | Keterangan                              |
+| ------ | ----------------- | --------------------------------------- |
+| GET    | `/api/peminjaman` | Daftar peminjaman buku dalam bentuk JSON |
+
+Alamat yang diizinkan memanggil API diatur pada [`config/cors.php`](config/cors.php),
+secara bawaan `http://localhost:5173` dan `http://127.0.0.1:5173` (Vite dev server).
+
+## Frontend (Vue 3)
+
+Aplikasi frontend berada pada folder [`frontend/`](frontend/) dan dibuat dengan
+`create-vue` (Vue 3 + Vue Router + Vitest + ESLint).
+
+```bash
+cd frontend
+npm install
+cp .env.example .env    # isi VITE_API_URL
+npm run dev
+```
+
+Frontend dapat diakses pada `http://localhost:5173` dengan dua halaman ber-router,
+yaitu `/` (beranda) dan `/peminjaman` (data dari API Laravel).
+
 ## Menjalankan Pengujian
 
 ```bash
-php artisan test        # menjalankan test suite
-vendor/bin/pint --test  # memeriksa gaya penulisan kode
+php artisan test              # test backend Laravel
+vendor/bin/pint --test        # memeriksa gaya penulisan kode PHP
+
+cd frontend
+npm run lint                  # oxlint + ESLint
+npm run test:unit -- --run    # unit test Vitest
+npm run build                 # membangun folder dist/
 ```
 
 ## Alur Kerja Git
@@ -62,8 +91,21 @@ Aturan yang diterapkan:
 
 ## Continuous Integration
 
-Berkas [`.github/workflows/ci.yml`](.github/workflows/ci.yml) menjalankan dua job pada
-setiap push dan Pull Request ke `main` dan `dev`:
+Repositori ini memiliki dua workflow GitHub Actions.
 
-1. **Automated Tests** — memasang dependensi lalu menjalankan `php artisan test`.
-2. **Code Style (Laravel Pint)** — memeriksa gaya penulisan kode dengan `vendor/bin/pint --test`.
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) — pipeline backend:
+
+```
+build → test → staging → production
+```
+
+[`.github/workflows/frontend-ci.yml`](.github/workflows/frontend-ci.yml) — pipeline frontend:
+
+```
+lint → test → build → deploy
+```
+
+Job terakhir pada kedua pipeline (`production` dan `deploy`) hanya berjalan dari
+branch `main`. Push ke branch fitur dan Pull Request tetap menjalankan job-job
+sebelumnya. Job `deploy` frontend tidak membangun ulang aplikasi, melainkan
+mengunduh artifact hasil job `build`.
