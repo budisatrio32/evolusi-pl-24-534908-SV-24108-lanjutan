@@ -22,7 +22,7 @@ export function formatLabelPeminjaman(peminjaman) {
     return 'Data tidak lengkap'
   }
 
-  return `${nama} | ${judul}`
+  return `${nama} - ${judul}`
 }
 
 /**
