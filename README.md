@@ -60,6 +60,35 @@ npm run dev
 Frontend dapat diakses pada `http://localhost:5173` dengan dua halaman ber-router,
 yaitu `/` (beranda) dan `/peminjaman` (data dari API Laravel).
 
+## Menjalankan dengan Docker
+
+Aplikasi Laravel dibungkus menjadi image lewat [`Dockerfile`](Dockerfile), dan
+berkas yang tidak perlu dikecualikan melalui [`.dockerignore`](.dockerignore).
+
+```bash
+docker build -t evolusi-pl:1.0 .
+docker run -d --name evolusi-pl -p 8080:8000 evolusi-pl:1.0
+docker ps
+```
+
+Aplikasi dapat diakses pada `http://localhost:8080`, halaman peminjaman pada
+`http://localhost:8080/peminjaman`, dan endpoint JSON pada
+`http://localhost:8080/api/peminjaman`.
+
+Saat container pertama kali dijalankan, [`docker/entrypoint.sh`](docker/entrypoint.sh)
+menyiapkan `.env`, membuat `APP_KEY`, lalu menjalankan migrasi beserta data contoh.
+
+Urutan instruksi pada Dockerfile disusun dari yang paling jarang berubah ke yang
+paling sering berubah: ekstensi PHP, lalu `composer.json` dan `composer.lock`
+beserta `composer install`, baru kode aplikasi. Dengan urutan itu, perubahan pada
+kode tidak membuat Composer mengunduh ulang seluruh dependensi.
+
+```bash
+docker logs evolusi-pl     # melihat log bila container mati
+docker stop evolusi-pl     # menghentikan container
+docker rm evolusi-pl       # menghapus container
+```
+
 ## Menjalankan Pengujian
 
 ```bash
