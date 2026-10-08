@@ -27,3 +27,6 @@ Thumbs.db
 # Materi kuliah dan berkas laporan; bukan bagian dari kode aplikasi
 /*.pdf
 /Laporan PDF*/
+
+# Catatan lokal untuk asisten, bukan bagian dari kode aplikasi
+CLAUDE.md
