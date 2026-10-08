@@ -34,3 +34,10 @@ Laporan PDF*/
 .vscode
 .idea
 README.md
+
+# Tidak dibutuhkan saat aplikasi melayani request
+tests
+phpunit.xml
+deploy.sh
+bootstrap/cache/*.php
+CLAUDE.md
