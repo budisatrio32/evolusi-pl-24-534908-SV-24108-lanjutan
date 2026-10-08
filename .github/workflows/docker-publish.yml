@@ -1,0 +1,85 @@
+name: Docker Image
+
+on:
+  push:
+    branches: [main, dev, 'feature/**']
+  workflow_dispatch:
+
+# GITHUB_TOKEN hanya diberi izin yang dibutuhkan: membaca kode dan menulis package.
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    name: Docker Build & Push (GHCR)   # sengaja bukan "build"/"test" agar tidak bentrok dengan required check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Nama image di GHCR wajib huruf kecil, sedangkan nama repo memuat "SV".
+      # ${VAR,,} pada bash mengubah seluruh huruf menjadi kecil.
+      - name: Tentukan nama dan tag image
+        id: meta
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          TAGS="${IMAGE}:${GITHUB_SHA}"
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            TAGS="${TAGS},${IMAGE}:latest"
+          fi
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "Image: ${IMAGE}"
+          echo "Tag  : ${TAGS}"
+
+      - name: Siapkan Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login ke ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Image dibangun dan dimuat ke Docker runner dulu (belum didorong),
+      # supaya bisa diuji sebelum terbit.
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test (healthy dan bukan root)
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+        run: |
+          docker run -d --name uji -p 8080:8000 "${IMAGE}:${GITHUB_SHA}"
+          for i in $(seq 1 20); do
+            STATUS=$(docker inspect -f '{{.State.Health.Status}}' uji)
+            echo "Percobaan ${i}: ${STATUS}"
+            [ "${STATUS}" = "healthy" ] && break
+            sleep 3
+          done
+          docker ps
+          [ "${STATUS}" = "healthy" ] || { docker logs uji; exit 1; }
+          USER_NAME=$(docker exec uji whoami)
+          echo "Container berjalan sebagai: ${USER_NAME}"
+          [ "${USER_NAME}" != "root" ] || { echo "Container tidak boleh berjalan sebagai root"; exit 1; }
+          curl -fsS http://localhost:8080/api/peminjaman
+          docker rm -f uji
+
+      - name: Push image ke GHCR
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+        run: |
+          docker push --all-tags "${IMAGE}"
+          docker images "${IMAGE}"
