@@ -60,6 +60,52 @@ npm run dev
 Frontend dapat diakses pada `http://localhost:5173` dengan dua halaman ber-router,
 yaitu `/` (beranda) dan `/peminjaman` (data dari API Laravel).
 
+## Menjalankan dengan Docker
+
+Aplikasi Laravel dibungkus menjadi image lewat [`Dockerfile`](Dockerfile), dan
+berkas yang tidak perlu dikecualikan melalui [`.dockerignore`](.dockerignore).
+
+```bash
+docker build -t evolusi-pl:2.0 .
+docker run -d --name evolusi-pl -p 8080:8000 evolusi-pl:2.0
+docker ps                       # kolom STATUS menampilkan (healthy)
+docker exec evolusi-pl whoami   # laravel, bukan root
+```
+
+Aplikasi dapat diakses pada `http://localhost:8080`, halaman peminjaman pada
+`http://localhost:8080/peminjaman`, dan endpoint JSON pada
+`http://localhost:8080/api/peminjaman`.
+
+Saat container pertama kali dijalankan, [`docker/entrypoint.sh`](docker/entrypoint.sh)
+menyiapkan `.env`, membuat `APP_KEY`, lalu menjalankan migrasi beserta data contoh.
+
+Dockerfile memakai **multi-stage build**:
+
+| Tahap | Isi | Ikut ke image akhir? |
+| ----- | --- | -------------------- |
+| `builder` | PHP, Composer, cache unduhan, `composer install --no-dev` | Tidak, hanya folder hasil jadinya yang disalin |
+| `runtime` | PHP, kode aplikasi, `vendor/` | Ya |
+
+Base image dikunci ke `php:8.2.34-cli-alpine3.24` (bukan `latest`). Container berjalan
+sebagai user `laravel` (uid 1000), dan `HEALTHCHECK` memanggil endpoint `/up` setiap
+10 detik sehingga `docker ps` menampilkan status `(healthy)`.
+
+```bash
+docker logs evolusi-pl     # melihat log bila container mati
+docker stop evolusi-pl     # menghentikan container
+docker rm evolusi-pl       # menghapus container
+```
+
+### Image di GitHub Container Registry
+
+Workflow [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml)
+membangun image, mengujinya (status `healthy` dan user bukan root), lalu mendorongnya ke
+`ghcr.io` dengan tag nomor commit (`github.sha`). Push ke `main` juga menambahkan tag `latest`.
+
+```bash
+docker pull ghcr.io/budisatrio32/evolusi-pl-24-534908-sv-24108-lanjutan:<sha-commit>
+```
+
 ## Menjalankan Pengujian
 
 ```bash

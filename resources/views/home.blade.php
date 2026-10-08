@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="card">
-        <h1>Aplikasi Web Sederhana</h1>
+        <h1>Aplikasi Web Sederhana.</h1>
         <p>
             Aplikasi ini dibangun dengan Laravel {{ app()->version() }} sebagai studi kasus mata kuliah
             Konstruksi dan Evolusi Perangkat Lunak.
