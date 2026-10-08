@@ -1,0 +1,43 @@
+# Semakin sedikit yang masuk ke build context, semakin cepat build
+# dan semakin jarang cache layer batal tanpa alasan.
+
+# Wajib dikecualikan
+node_modules
+vendor
+.git
+.env
+
+# Berkas rahasia lain (.env.example tetap ikut, dipakai saat container nyala)
+.env.*
+!.env.example
+
+# Riwayat dan konfigurasi Git
+.gitignore
+.gitattributes
+.github
+
+# Frontend Vue punya pipeline sendiri, tidak dibutuhkan image Laravel
+frontend
+
+# Basis data dan berkas sementara milik laptop
+database/*.sqlite*
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+.phpunit.result.cache
+.phpunit.cache
+
+# Materi kuliah, laporan, dan berkas editor
+*.pdf
+Laporan PDF*/
+.vscode
+.idea
+README.md
+
+# Tidak dibutuhkan saat aplikasi melayani request
+tests
+phpunit.xml
+deploy.sh
+bootstrap/cache/*.php
+CLAUDE.md
